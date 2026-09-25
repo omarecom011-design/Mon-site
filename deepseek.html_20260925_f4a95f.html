@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Combat — Studio de court-métrage</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    :root {
+        --bg: #0e0e10; --panel: #17171a; --panel-2: #1e1e22; --border: #2a2a30;
+        --ink: #f0f0f2; --ink-dim: #8a8a95; --ink-faint: #55555e;
+        --accent: #e63946; --accent-2: #f77f00; --info: #4a6cf7;
+        --success: #2d8a4e; --error: #c0392b; --warn: #d4a017;
+        --radius: 12px;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        background: var(--bg); color: var(--ink); min-height: 100vh;
+        padding: 1.5rem 1rem 6rem; font-size: 15px; line-height: 1.5;
+        max-width: 900px; margin: 0 auto;
+    }
+    header { margin-bottom: 1.5rem; text-align: center; }
+    h1 {
+        font-size: 1.6rem; font-weight: 700; letter-spacing: 0.02em;
+        margin-bottom: 0.3rem; text-transform: uppercase;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .subtitle { font-size: 0.8rem; color: var(--ink-dim); font-style: italic; letter-spacing: 0.05em; }
+
+    .toast {
+        position: fixed; top: 1.5rem; left: 50%;
+        transform: translateX(-50%) translateY(-100px);
+        background: var(--ink); color: var(--bg);
+        padding: 0.85rem 1.4rem; border-radius: 10px;
+        font-size: 0.85rem; font-weight: 600;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        z-index: 1000; opacity: 0;
+        transition: transform 0.35s ease, opacity 0.35s ease;
+        max-width: 90vw; text-align: center;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { background: var(--success); color: #fff; }
+    .toast.error { background: var(--error); color: #fff; }
+    .toast.warn { background: var(--warn); color: #fff; }
+    .toast .toast-icon { font-size: 1rem; }
+
+    .info-banner {
+        background: linear-gradient(135deg, rgba(230,57,70,0.12), rgba(247,127,0,0.08));
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem; border-radius: 8px;
+        font-size: 0.78rem; color: #e0e0e5;
+        margin-bottom: 1rem; line-height: 1.5;
+    }
+    .info-banner strong { color: var(--accent-2); }
+
+    .section {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--radius); margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    .section-header {
+        padding: 0.9rem 1.1rem; cursor: pointer; user-select: none;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .section-header:active { background: var(--panel-2); }
+    .section-title {
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--ink-dim); font-weight: 700;
+    }
+    .section-title .badge {
+        display: inline-block; margin-left: 0.4rem; padding: 0.15rem 0.5rem;
+        background: var(--accent); color: #fff; border-radius: 10px;
+        font-size: 0.62rem; letter-spacing: 0;
+    }
+    .section-header .chevron {
+        font-size: 0.7rem; color: var(--ink-faint); transition: transform 0.2s;
+    }
+    .section.open .section-header .chevron { transform: rotate(180deg); }
+    .section-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .section.open .section-body { max-height: 5000px; }
+    .section-content { padding: 0 1.1rem 1.1rem; }
+
+    .api-panel {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 1rem 1.2rem;
+        margin-bottom: 1rem; transition: border-color 0.3s;
+    }
+    .api-panel.ok { border-color: var(--success); }
+
+    .api-key-input {
+        width: 100%; padding: 0.85rem 1rem;
+        border-radius: 8px; border: 1px solid var(--border);
+        background: var(--panel-2); color: var(--ink);
+        font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+        font-size: 0.85rem; margin-bottom: 0.6rem;
+    }
+    .api-key-input:focus { outline: none; border-color: var(--accent); }
+
+    .api-save-btn {
+        width: 100%; padding: 0.8rem 1.2rem;
+        border-radius: 8px; border: none;
+        background: var(--accent); color: #fff;
+        font-size: 0.9rem; font-weight: 700; font-family: inherit;
+        cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+        margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .api-save-btn:active { transform: scale(0.98); }
+
+    .api-status-line {
+        font-size: 0.75rem; padding: 0.55rem 0.85rem;
+        border-radius: 6px; margin-bottom: 0.5rem;
+        display: flex; align-items: center; gap: 0.5rem;
+        background: var(--panel-2); color: var(--ink-dim);
+        transition: all 0.3s;
+    }
+    .api-status-line.ok { background: rgba(45,138,78,0.15); color: #4fd97a; font-weight: 600; }
+    .api-status-line .status-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--ink-faint); flex-shrink: 0;
+        transition: background 0.3s;
+    }
+    .api-status-line.ok .status-dot { background: #4fd97a; box-shadow: 0 0 8px #4fd97a; }
+
+    .api-hint { font-size: 0.72rem; color: var(--ink-dim); margin-top: 0.4rem; }
+    .api-hint a { color: var(--accent-2); text-decoration: underline; }
+
+    .wake-status {
+        font-size: 0.72rem; padding: 0.5rem 0.7rem;
+        border-radius: 6px; margin-top: 0.6rem;
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(74,108,247,0.12); color: #7a9aff;
+        flex-wrap: wrap; gap: 0.4rem;
+    }
+    .wake-status.active { background: rgba(45,138,78,0.15); color: #4fd97a; }
+    .wake-status.warn { background: rgba(212,160,23,0.15); color: #f0c040; }
+    .wake-status button {
+        background: transparent; border: 1px solid currentColor;
+        color: inherit; padding: 0.25rem 0.6rem; border-radius: 6px;
+        font-size: 0.68rem; cursor: pointer; font-family: inherit;
+    }
+
+    .upload-zone {
+        border: 2px dashed var(--border); border-radius: var(--radius);
+        padding: 2rem 1rem; text-align: center; cursor: pointer;
+        transition: all 0.25s; margin-bottom: 1rem;
+        background: var(--panel);
+    }
+    .upload-zone:active { border-color: var(--accent); background: var(--panel-2); }
+    .upload-zone.loading { pointer-events: none; opacity: 0.6; }
+    .upload-zone input[type="file"] { display: none; }
+    .upload-icon { font-size: 2.2rem; margin-bottom: 0.6rem; opacity: 0.8; }
+    .upload-text { font-size: 0.95rem; color: var(--ink); margin-bottom: 0.2rem; font-weight: 600; }
+    .upload-hint { font-size: 0.75rem; color: var(--ink-dim); }
+
+    .images-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.6rem; margin-bottom: 1rem;
+    }
+    .image-card {
+        position: relative; border-radius: 8px; overflow: hidden;
+        border: 1px solid var(--border); background: #000;
+        aspect-ratio: 9/16;
+    }
+    .image-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .image-card .remove-btn {
+        position: absolute; top: 4px; right: 4px;
+        background: rgba(0,0,0,0.75); color: #fff; border: none;
+        width: 24px; height: 24px; border-radius: 50%; font-size: 12px;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        line-height: 1; z-index: 2;
+    }
+    .image-card .role-select {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        background: rgba(0,0,0,0.85); color: #fff; border: none;
+        font-size: 0.65rem; padding: 0.35rem 0.3rem; width: 100%;
+        font-family: inherit; text-align: center;
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path fill='%23fff' d='M0 0l4 5 4-5z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 0.4rem center;
+        background-size: 6px;
+        cursor: pointer;
+        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+    }
+    .image-card .role-badge {
+        position: absolute; top: 4px; left: 4px;
+        background: var(--accent); color: #fff;
+        font-size: 0.6rem; padding: 0.15rem 0.45rem;
+        border-radius: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .image-card.role-fighter_a .role-badge { background: var(--accent); }
+    .image-card.role-fighter_b .role-badge { background: var(--info); }
+    .image-card.role-environment .role-badge { background: #6a4c93; }
+    .image-card.role-detail .role-badge { background: var(--accent-2); }
+
+    .prompt-main {
+        width: 100%; padding: 0.85rem 1rem;
+        border-radius: 8px; border: 1px solid var(--border);
+        background: var(--panel-2); color: var(--ink);
+        font-family: inherit; font-size: 0.9rem;
+        min-height: 90px; resize: vertical; line-height: 1.5;
+    }
+    .prompt-main:focus { outline: none; border-color: var(--accent); }
+
+    .styles-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.5rem;
+    }
+    .style-card {
+        padding: 0.75rem 0.85rem; border-radius: 8px;
+        border: 1px solid var(--border); background: var(--panel-2);
+        cursor: pointer; transition: all 0.15s;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .style-card:active { transform: scale(0.98); }
+    .style-card.selected {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #fff; border-color: var(--accent);
+        box-shadow: 0 4px 15px rgba(230,57,70,0.3);
+    }
+    .style-card .style-emoji { font-size: 1.3rem; flex-shrink: 0; }
+    .style-card .style-name { font-size: 0.8rem; font-weight: 700; line-height: 1.2; }
+    .style-card .style-desc { font-size: 0.65rem; opacity: 0.7; margin-top: 0.1rem; line-height: 1.2; }
+
+    .control-row { margin-bottom: 0.9rem; }
+    .control-row:last-child { margin-bottom: 0; }
+    .control-label {
+        display: block; font-size: 0.7rem; color: var(--ink-dim);
+        margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.08em;
+        font-weight: 700;
+    }
+    select {
+        width: 100%; padding: 0.7rem 0.9rem; border-radius: 8px;
+        border: 1px solid var(--border); background: var(--panel-2);
+        color: var(--ink); font-family: inherit; font-size: 0.88rem;
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23f0f0f2' d='M0 0l5 6 5-6z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 0.9rem center;
+        background-size: 10px;
+    }
+    select:focus { outline: none; border-color: var(--accent); }
+
+    .btn-primary {
+        width: 100%; padding: 1.1rem; border-radius: var(--radius);
+        border: none;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #fff;
+        font-size: 1rem; font-weight: 800; font-family: inherit;
+        cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+        margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em;
+        box-shadow: 0 6px 20px rgba(230,57,70,0.35);
+    }
+    .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
+
+    .btn-stop {
+        width: 100%; padding: 0.8rem; border-radius: var(--radius);
+        border: 1px solid var(--error); background: transparent;
+        color: var(--error); font-size: 0.85rem; font-weight: 700;
+        font-family: inherit; cursor: pointer; margin-bottom: 1rem;
+        display: none; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .btn-stop.visible { display: block; }
+
+    .storyboard {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem;
+    }
+    .storyboard-title {
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--ink-dim); font-weight: 700; margin-bottom: 0.8rem;
+    }
+    .shot-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .shot-item {
+        display: flex; align-items: center; gap: 0.7rem;
+        padding: 0.6rem 0.8rem; border-radius: 8px;
+        background: var(--panel-2); border-left: 3px solid var(--border);
+        font-size: 0.78rem;
+    }
+    .shot-item.done { border-left-color: var(--success); }
+    .shot-item.processing { border-left-color: var(--accent-2); animation: pulse 1.5s infinite; }
+    .shot-item.failed { border-left-color: var(--error); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .shot-item .shot-num {
+        font-family: ui-monospace, monospace;
+        font-size: 0.7rem; font-weight: 700;
+        background: var(--border); color: var(--ink);
+        padding: 0.15rem 0.4rem; border-radius: 4px;
+        flex-shrink: 0; min-width: 32px; text-align: center;
+    }
+    .shot-item .shot-name { flex: 1; font-weight: 600; }
+    .shot-item .shot-icon { font-size: 1rem; }
+
+    .gallery { margin-top: 1.5rem; }
+    .gallery-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.8rem;
+    }
+    .gallery-item {
+        border-radius: var(--radius); overflow: hidden;
+        border: 1px solid var(--border); background: #000;
+        animation: fadeIn 0.4s ease;
+        position: relative;
+    }
+    .gallery-item video { width: 100%; display: block; aspect-ratio: 9/16; object-fit: cover; }
+    .gallery-item .g-caption {
+        padding: 0.5rem 0.65rem; background: var(--panel);
+        font-size: 0.7rem; color: var(--ink-dim);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .gallery-item .g-caption .g-num {
+        font-family: ui-monospace, monospace; font-weight: 700;
+        color: var(--accent-2); font-size: 0.65rem;
+    }
+
+    .play-seq-btn {
+        width: 100%; padding: 0.85rem;
+        background: var(--panel); border: 1px solid var(--accent);
+        color: var(--accent); border-radius: var(--radius);
+        font-size: 0.85rem; font-weight: 700; font-family: inherit;
+        cursor: pointer; margin-bottom: 1rem;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        display: none;
+    }
+    .play-seq-btn.visible { display: block; }
+
+    .status-bar {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        color: #fff; padding: 0.7rem 1rem;
+        font-size: 0.78rem; font-weight: 600;
+        display: flex; align-items: center; gap: 0.6rem;
+        transform: translateY(100%); transition: transform 0.3s;
+        z-index: 100;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    }
+    .status-bar.visible { transform: translateY(0); }
+    .status-bar .spinner {
+        width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: #fff; border-radius: 50%;
+        animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .hidden { display: none !important; }
+
+    #noSleepCanvas { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; z-index: -1; }
+    #noSleepVideo { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; z-index: -1; }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Combat</h1>
+    <p class="subtitle">Court-métrage d'arts martiaux par IA</p>
+</header>
+
+<div class="info-banner">
+    <strong>Concept :</strong> Ajoutez quelques images (2 combattants, un décor, un détail).
+    L'application génère automatiquement un <strong>storyboard de 10 à 12 plans</strong> —
+    établissement, présentations, gros plan sur les yeux, <strong>caméra subjective</strong>,
+    <strong>dash super-vitesse</strong>, <strong>impact karaté</strong>, ralenti, contre-attaque, pose finale.
+    Chaque plan utilise l'image que vous lui attribuez.
+</div>
+
+<div class="api-panel" id="api-panel">
+    <input type="password" class="api-key-input" id="api-key-input"
+           placeholder="Collez votre clé API ici (sk-...)" autocomplete="off" spellcheck="false">
+    <button type="button" class="api-save-btn" id="api-save-btn">Enregistrer la clé</button>
+    <div class="api-status-line" id="api-status-line">
+        <span class="status-dot"></span>
+        <span id="api-status-text">Aucune clé API enregistrée</span>
+    </div>
+    <div class="api-hint">
+        Clé gratuite sur <a href="https://platform.agnes-ai.com" target="_blank">platform.agnes-ai.com</a> → Settings → API Keys
+    </div>
+    <div class="wake-status" id="wake-status">
+        <span id="wake-status-text">💤 Veille automatique</span>
+        <button type="button" id="wake-toggle-btn">Garder l'écran allumé</button>
+    </div>
+</div>
+
+<div class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" accept="image/*" multiple>
+    <div class="upload-icon">⚔️</div>
+    <div class="upload-text">Ajoutez vos combattants et décors</div>
+    <div class="upload-hint">1<sup>ère</sup> image = Combattant A · 2<sup>ème</sup> = Combattant B · suivantes = décors</div>
+</div>
+
+<div class="images-grid" id="images-grid"></div>
+
+<div class="section open" id="section-fight">
+    <div class="section-header" data-toggle="section-fight">
+        <span class="section-title">🥋 Style de combat <span class="badge">requis</span></span>
+        <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+        <div class="section-content">
+            <div class="styles-grid" id="fight-styles"></div>
+        </div>
+    </div>
+</div>
+
+<div class="section open" id="section-camera">
+    <div class="section-header" data-toggle="section-camera">
+        <span class="section-title">🎥 Caméra & rythme</span>
+        <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+        <div class="section-content">
+            <div class="styles-grid" id="camera-styles"></div>
+        </div>
+    </div>
+</div>
+
+<div class="section open" id="section-prompt">
+    <div class="section-header" data-toggle="section-prompt">
+        <span class="section-title">✍️ Ambiance générale</span>
+        <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+        <div class="section-content">
+            <textarea class="prompt-main" id="main-prompt"
+                placeholder="Décrivez l'ambiance globale de votre combat (optionnel). Par exemple : « Nuit pluvieuse sur les toits de Tokyo, néons rouges, tension palpable, respiration visible dans l'air froid »"></textarea>
+        </div>
+    </div>
+</div>
+
+<div class="section" id="section-tech">
+    <div class="section-header" data-toggle="section-tech">
+        <span class="section-title">📷 Réglages techniques</span>
+        <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+        <div class="section-content">
+            <div class="control-row">
+                <label class="control-label">Durée de chaque plan</label>
+                <select id="duration-select">
+                    <option value="121">5 secondes</option>
+                    <option value="153" selected>6,4 secondes (recommandé)</option>
+                </select>
+            </div>
+            <div class="control-row">
+                <label class="control-label">Intensité du combat</label>
+                <select id="intensity-select">
+                    <option value="subtle">Élégant — mouvements lents et contrôlés</option>
+                    <option value="moderate" selected>Équilibré — combat fluide et cinématique</option>
+                    <option value="strong">Brutal — impacts violents, rapides</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="storyboard" id="storyboard-preview" style="display:none;">
+    <div class="storyboard-title">🎬 Storyboard — <span id="sb-count">0</span> plans</div>
+    <div class="shot-list" id="shot-list"></div>
+</div>
+
+<button type="button" class="btn-primary" id="generate-btn" disabled>
+    Créer le court-métrage
+</button>
+
+<button type="button" class="btn-stop" id="stop-btn">
+    ⏹ Arrêter
+</button>
+
+<button type="button" class="play-seq-btn" id="play-seq-btn">
+    ▶ Lire la séquence complète
+</button>
+
+<div class="queue" id="queue" style="display:none;"></div>
+
+<div class="gallery" id="gallery" style="display:none;">
+    <div class="section-title" style="margin-bottom:0.8rem;">Plans générés</div>
+    <div class="gallery-grid" id="gallery-grid"></div>
+</div>
+
+<div class="status-bar" id="status-bar">
+    <div class="spinner"></div>
+    <span id="status-text">Préparation…</span>
+</div>
+
+<div class="toast" id="toast">
+    <span class="toast-icon" id="toast-icon">✓</span>
+    <span id="toast-text">Message</span>
+</div>
+
+<canvas id="noSleepCanvas" width="2" height="2"></canvas>
+<video id="noSleepVideo" playsinline muted loop></video>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ══════════════════════════════════════════════════════════════════
+const API_BASE = 'https://apihub.agnes-ai.com/v1';
+const POLL_BASE = 'https://apihub.agnes-ai.com/agnesapi';
+const MODEL_VIDEO = 'agnes-video-v2.0';
+const FRAME_RATE = 24;
+
+let createIntervalMs = 62000;
+const CREATE_INTERVAL_MIN = 62000;
+const CREATE_INTERVAL_MAX = 90000;
+const CREATE_INTERVAL_SAFE = 75000;
+
+const POLL_INTERVAL_SEC = 8;
+const MAX_POLL_ATTEMPTS = 100;
+
+const API_KEY_STORAGE = 'combat_api_key';
+const WAKE_LOCK_PREF = 'combat_wakelock_enabled';
+
+const MAX_VISIBLE_QUEUE = 30;
+const MAX_IMAGE_SIZE = 12 * 1024 * 1024;
+const THUMBNAIL_MAX_WIDTH = 200;
+
+// ══════════════════════════════════════════════════════════════════
+// STYLES DE COMBAT
+// ══════════════════════════════════════════════════════════════════
+const FIGHT_STYLES = [
+    { id: 'karate', name: 'Karaté', emoji: '🥋', desc: 'Coups puissants, kime, impact',
+      prompt: 'traditional Okinawan karate, powerful linear strikes, decisive kime, focused breathing, disciplined technique, gi uniform when applicable, sharp fist and palm heel techniques' },
+    { id: 'kungfu', name: 'Kung Fu', emoji: '🐉', desc: 'Fluide, circulaire, animal',
+      prompt: 'Chinese kung fu, fluid circular movements, animal styles (crane, tiger, snake), flowing silk clothing when applicable, traditional martial arts aesthetic' },
+    { id: 'wuxia', name: 'Wuxia', emoji: '🍃', desc: 'Combats aériens poétiques',
+      prompt: 'wuxia film aesthetic, weightless aerial combat, flowing silk robes, bamboo forest or misty mountain, poetic graceful motion, Hero and Crouching Tiger Hidden Dragon style choreography' },
+    { id: 'mma', name: 'MMA', emoji: '🥊', desc: 'Réaliste, brutal, moderne',
+      prompt: 'modern MMA combat, ground and pound, takedowns, brutal realistic fighting, sweat flying, octagon or gritty warehouse setting, athletic intense realism' },
+    { id: 'cyberpunk', name: 'Cyberpunk', emoji: '🌃', desc: 'Néon, augmentations, futur',
+      prompt: 'cyberpunk street fight, neon pink and cyan lighting, cybernetic enhancements visible, holographic ads in background, rain-slicked pavement, futuristic martial arts' },
+    { id: 'samurai', name: 'Samouraï', emoji: '⚔️', desc: 'Duel au katana, cerisiers',
+      prompt: 'samurai duel, katana iaido technique, single decisive strike, cherry blossom petals falling, traditional Japanese setting, still tension before the cut, Kurosawa film aesthetic' },
+    { id: 'boxe', name: 'Boxe', emoji: '🥇', desc: 'Ring, esquives, crochets',
+      prompt: 'professional boxing, ring setting, jabs and hooks, head movement and footwork, sweat and blood, vintage gym atmosphere, classic boxing drama' },
+    { id: 'taekwondo', name: 'Taekwondo', emoji: '🦶', desc: 'Coups de pied hauts',
+      prompt: 'Taekwondo martial arts, high spinning kicks, jumping techniques, dynamic leg work, dojang or arena setting, olympic-style athleticism' }
+];
+
+// ══════════════════════════════════════════════════════════════════
+// STYLES DE CAMÉRA
+// ══════════════════════════════════════════════════════════════════
+const CAMERA_STYLES = [
+    { id: 'pov_focus', name: 'Subjective (POV)', emoji: '👁️', desc: 'Point de vue du combattant',
+      prompt: 'prioritize first-person POV shots and subjective close-up perspectives, viewer experiences the fight through the fighter\'s eyes' },
+    { id: 'cinematic', name: 'Cinématique', emoji: '🎬', desc: 'Larges, drama, cadre épique',
+      prompt: 'prioritize wide cinematic shots, dramatic framing, epic composition, film-like camera language, anamorphic feel' },
+    { id: 'mixed', name: 'Mixte', emoji: '🎞️', desc: 'Alternance POV / large / serré',
+      prompt: 'alternate between POV, wide, medium and close shots, dynamic shot coverage, cinematic variety, standard fight scene editing language' }
+];
+
+// ══════════════════════════════════════════════════════════════════
+// INTENSITÉ
+// ══════════════════════════════════════════════════════════════════
+const INTENSITY_PRESETS = {
+    subtle: 'elegant controlled movement, slow deliberate motion, precise technique, minimal but meaningful action, graceful martial arts',
+    moderate: 'fluid dynamic movement, clear impactful action, balanced combat choreography, cinematic fight energy',
+    strong: 'explosive dynamic movement, violent fast impacts, brutal combat energy, dramatic force and power, aggressive motion'
+};
+
+// ══════════════════════════════════════════════════════════════════
+// STORYBOARD — liste des plans du court-métrage
+// ══════════════════════════════════════════════════════════════════
+const SHOT_TEMPLATES = [
+    {
+        id: 'establishing',
+        name: 'Établissement du décor',
+        icon: '🏯',
+        needRole: 'environment',
+        prompt: 'Slow cinematic establishing shot of an empty environment, moody atmosphere with dramatic light, dust particles floating in the air, silence before the storm, no fighters visible yet, wide composition, deep depth of field, tension building, ultra cinematic film opening'
+    },
+    {
+        id: 'fighter_a_intro',
+        name: 'Présentation — Combattant A',
+        icon: '🥋',
+        needRole: 'fighter_a',
+        prompt: 'Subject stands in a traditional martial arts fighting stance, weight on the balls of the feet, fists raised in guard position, deep controlled breathing, intense focused gaze forward, cinematic backlight and rim light, sweat droplets glistening on the skin, dust around the feet, slow push-in camera move, dramatic tension, ultra cinematic character introduction'
+    },
+    {
+        id: 'fighter_b_intro',
+        name: 'Présentation — Combattant B',
+        icon: '🥊',
+        needRole: 'fighter_b',
+        prompt: 'The opponent stands in a mirror martial arts fighting stance, opposite side of the frame, ready to engage, controlled breathing visible, intense eyes locked on the other fighter, dramatic side lighting, rim light on shoulders, slow camera arc around the subject, cinematic character introduction, sense of rivalry and tension'
+    },
+    {
+        id: 'eyes_a',
+        name: 'Regard — Combattant A',
+        icon: '👁️',
+        needRole: 'fighter_a',
+        prompt: 'Extreme close-up on the subject\'s eyes, intense focused gaze, determination, slight subtle eye movement, reflection of the opponent visible in the pupil, dramatic side lighting, shallow depth of field, slow subtle zoom on the eyes, no other movement, hyper detailed, cinematic intensity'
+    },
+    {
+        id: 'eyes_b',
+        name: 'Regard — Combattant B',
+        icon: '👁️',
+        needRole: 'fighter_b',
+        prompt: 'Extreme close-up on the opponent\'s eyes, fierce intense gaze, aggressiveness, slight subtle eye movement, reflection of the first fighter visible in the pupil, dramatic side lighting, shallow depth of field, slow subtle zoom on the eyes, hyper detailed, cinematic intensity'
+    },
+    {
+        id: 'pov_opponent',
+        name: 'Subjective — Vision de l\'adversaire',
+        icon: '🎯',
+        needRole: 'fighter_a',
+        prompt: 'First-person POV shot from fighter A\'s eyes, hands raised in fighting guard visible at the bottom of the frame, looking directly at the opponent standing in combat stance ahead in the distance, slight head movement following the opponent, breathing visible through subtle frame shake, depth of field focused on the opponent, cinematic tension, immersive subjective perspective'
+    },
+    {
+        id: 'dash',
+        name: 'Dash super-vitesse',
+        icon: '💨',
+        needRole: 'fighter_a',
+        prompt: 'Fighter launches forward at super-human speed, feet leaving the ground, intense motion blur trails streaking behind, energy lines and speed streaks emanating from the body, dust kicked up in the wake, dynamic low angle shot, slow motion capture at the peak of the launch, cinematic shockwave, superhero-speed impact, blazing momentum'
+    },
+    {
+        id: 'strike',
+        name: 'Impact karaté',
+        icon: '💥',
+        needRole: 'fighter_a',
+        prompt: 'Fighter delivers a devastating karate strike at full extension, palm heel or fist driving forward, exact moment of impact with visible air shockwave ripple in front of the strike, energy burst at the contact point, dust and debris suspended in the air, dramatic backlight, slow motion, ultimate kime moment, cinematic martial arts impact'
+    },
+    {
+        id: 'impact_detail',
+        name: 'Détail du choc',
+        icon: '⚡',
+        needRole: 'detail',
+        fallbackRole: 'fighter_a',
+        prompt: 'Extreme slow motion close-up on the impact point, air visibly rippling in concentric shockwave rings, droplets of sweat suspended mid-air, dust particles frozen in the light, hyper-detailed skin contact, cinematic freeze frame moment, dark dramatic background, the very instant of the collision'
+    },
+    {
+        id: 'counter',
+        name: 'Contre-attaque',
+        icon: '🌀',
+        needRole: 'fighter_b',
+        prompt: 'Opponent counter-attacks with a spinning back kick or elbow, visible motion arc trail following the striking limb, dust rising from the ground with each movement, dynamic medium shot, dramatic slow motion at the peak of the rotation, cinematic martial arts choreography, expression of power and precision'
+    },
+    {
+        id: 'slowmo_peak',
+        name: 'Apogée au ralenti',
+        icon: '🌌',
+        needRole: 'fighter_a',
+        prompt: 'Both fighters at the absolute peak of combat, mid-air clash frozen in time, ultra slow motion, dust and sweat particles floating weightlessly around them, dramatic rim lighting from both sides, cinematic wide shot with both subjects in frame, apex of the fight, epic choreography, no movement except hair and fabric drifting'
+    },
+    {
+        id: 'final_pose',
+        name: 'Pose finale',
+        icon: '🏆',
+        needRole: 'fighter_a',
+        prompt: 'Winner stands in a composed and dignified victory pose, breathing slowly and deeply, defeated opponent on the ground in the background, dust settling around them, cinematic wide shot, dramatic low angle, warm golden backlight, film grain, quiet after the storm, martial arts film ending'
+    }
+];
+
+// ══════════════════════════════════════════════════════════════════
+// ÉTAT
+// ══════════════════════════════════════════════════════════════════
+const state = {
+    images: [],
+    isRunning: false,
+    stopRequested: false,
+    storyboard: [],
+    queue: [],
+    completed: 0,
+    failed: 0,
+    fightStyle: 'karate',
+    cameraStyle: 'mixed',
+    intensity: 'moderate',
+    mainPrompt: '',
+    durationFrames: 153,
+    isLoadingImages: false,
+    creationAttemptsSinceLastError: 0
+};
+
+// ══════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════
+let toastTimeout = null;
+function showToast(message, type = 'success', duration = 2500) {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    const text = document.getElementById('toast-text');
+    if (!toast || !icon || !text) return;
+    toast.classList.remove('visible', 'success', 'error', 'warn');
+    void toast.offsetWidth;
+    const icons = { success: '✓', error: '✕', warn: '⚠' };
+    icon.textContent = icons[type] || '✓';
+    text.textContent = message;
+    toast.classList.add(type);
+    requestAnimationFrame(() => toast.classList.add('visible'));
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('visible'), duration);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ANTI-VEILLE
+// ══════════════════════════════════════════════════════════════════
+let wakeLockSentinel = null;
+let wakeLockEnabled = false;
+let canvasStream = null;
+let canvasInterval = null;
+
+function isWakeLockSupported() {
+    return 'wakeLock' in navigator && typeof navigator.wakeLock.request === 'function';
+}
+
+async function requestWakeLockAPI() {
+    if (!isWakeLockSupported()) return false;
+    try {
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => {
+            wakeLockSentinel = null;
+            updateWakeStatus();
+        });
+        return true;
+    } catch (e) { return false; }
+}
+
+async function releaseWakeLockAPI() {
+    if (wakeLockSentinel) {
+        try { await wakeLockSentinel.release(); } catch (e) {}
+        wakeLockSentinel = null;
+    }
+}
+
+function startCanvasStream() {
+    if (canvasStream) return true;
+    try {
+        const canvas = document.getElementById('noSleepCanvas');
+        const video = document.getElementById('noSleepVideo');
+        if (!canvas || !video) return false;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return false;
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (typeof canvas.captureStream !== 'function') return false;
+        canvasStream = canvas.captureStream(1);
+        let toggle = false;
+        canvasInterval = setInterval(() => {
+            toggle = !toggle;
+            ctx.fillStyle = toggle ? '#000000' : '#010101';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }, 1000);
+        video.srcObject = canvasStream;
+        video.muted = true;
+        video.playsInline = true;
+        const p = video.play();
+        if (p && p.catch) p.catch(() => {});
+        return true;
+    } catch (e) { return false; }
+}
+
+function stopCanvasStream() {
+    if (canvasInterval) { clearInterval(canvasInterval); canvasInterval = null; }
+    const video = document.getElementById('noSleepVideo');
+    if (video) { try { video.pause(); video.srcObject = null; } catch (e) {} }
+    if (canvasStream) {
+        try { canvasStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        canvasStream = null;
+    }
+}
+
+async function activateWakeLock() {
+    let success = false;
+    if (isWakeLockSupported()) success = await requestWakeLockAPI();
+    if (!success) success = startCanvasStream();
+    if (!success && !canvasStream) success = startCanvasStream();
+    return success;
+}
+
+async function deactivateWakeLock() {
+    await releaseWakeLockAPI();
+    stopCanvasStream();
+}
+
+function updateWakeStatus() {
+    const el = document.getElementById('wake-status');
+    const txt = document.getElementById('wake-status-text');
+    const btn = document.getElementById('wake-toggle-btn');
+    if (!el || !txt || !btn) return;
+    el.classList.remove('active', 'warn');
+    const hasAny = isWakeLockSupported() || (document.getElementById('noSleepCanvas')?.captureStream);
+    if (!hasAny) {
+        el.classList.add('warn');
+        txt.textContent = '⚠️ Non supporté';
+        btn.style.display = 'none';
+        return;
+    }
+    btn.style.display = 'inline-block';
+    const isActive = wakeLockSentinel !== null || canvasStream !== null;
+    if (wakeLockEnabled && isActive) {
+        el.classList.add('active');
+        txt.textContent = '✅ Écran allumé';
+        btn.textContent = 'Désactiver';
+    } else if (wakeLockEnabled) {
+        el.classList.add('warn');
+        txt.textContent = '⏳ En attente';
+        btn.textContent = 'Désactiver';
+    } else {
+        txt.textContent = '💤 Veille automatique';
+        btn.textContent = 'Garder l\'écran allumé';
+    }
+}
+
+async function toggleWakeLock() {
+    if (wakeLockEnabled) {
+        wakeLockEnabled = false;
+        await deactivateWakeLock();
+        try { localStorage.setItem(WAKE_LOCK_PREF, '0'); } catch (e) {}
+        showToast('Veille automatique réactivée', 'warn');
+    } else {
+        wakeLockEnabled = true;
+        const ok = await activateWakeLock();
+        try { localStorage.setItem(WAKE_LOCK_PREF, '1'); } catch (e) {}
+        showToast(ok ? 'Écran maintenu allumé' : 'Activez manuellement', ok ? 'success' : 'warn');
+    }
+    updateWakeStatus();
+}
+
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && wakeLockEnabled) {
+        await activateWakeLock();
+        updateWakeStatus();
+    }
+});
+
+async function ensureWakeLockActive() {
+    if (!wakeLockEnabled) return;
+    if (wakeLockSentinel === null && canvasStream === null) {
+        await activateWakeLock();
+        updateWakeStatus();
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CLÉ API
+// ══════════════════════════════════════════════════════════════════
+function getApiKey() {
+    try { return (localStorage.getItem(API_KEY_STORAGE) || '').trim(); }
+    catch (e) { return ''; }
+}
+
+function saveApiKey() {
+    const input = document.getElementById('api-key-input');
+    if (!input) return;
+    const key = input.value.trim();
+    if (!key) {
+        try { localStorage.removeItem(API_KEY_STORAGE); } catch (e) {}
+        updateApiPanel();
+        showToast('Clé supprimée', 'warn');
+        return;
+    }
+    if (!key.startsWith('sk-')) {
+        if (!confirm('La clé ne commence pas par "sk-". Sauvegarder quand même ?')) return;
+    }
+    try {
+        localStorage.setItem(API_KEY_STORAGE, key);
+        updateApiPanel();
+        showToast('Clé enregistrée', 'success');
+        input.blur();
+    } catch (e) { showToast('Erreur', 'error'); }
+}
+
+function updateApiPanel() {
+    const panel = document.getElementById('api-panel');
+    const input = document.getElementById('api-key-input');
+    const statusLine = document.getElementById('api-status-line');
+    const statusText = document.getElementById('api-status-text');
+    const key = getApiKey();
+    if (!panel || !input || !statusLine || !statusText) return;
+    if (key) {
+        panel.classList.add('ok');
+        statusLine.classList.add('ok');
+        statusText.textContent = 'Clé active · ' + key.slice(0, 8) + '…' + key.slice(-4);
+        input.value = key;
+    } else {
+        panel.classList.remove('ok');
+        statusLine.classList.remove('ok');
+        statusText.textContent = 'Aucune clé API enregistrée';
+        input.value = '';
+    }
+    updateGenerateBtn();
+}
+
+function updateGenerateBtn() {
+    const btn = document.getElementById('generate-btn');
+    if (!btn) return;
+    const hasImages = state.images.length > 0;
+    const hasKey = !!getApiKey();
+    btn.disabled = !hasImages || !hasKey || state.isRunning || state.isLoadingImages;
+    if (state.isLoadingImages) btn.textContent = 'Chargement… (' + state.images.length + ')';
+    else if (state.isRunning) {
+        const done = state.completed + state.failed;
+        btn.textContent = 'Tournage… (' + done + '/' + state.queue.length + ')';
+    }
+    else if (!hasKey) btn.textContent = 'Ajoutez votre clé API';
+    else if (!hasImages) btn.textContent = 'Ajoutez des images';
+    else btn.textContent = 'Créer le court-métrage (' + state.storyboard.length + ' plans)';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UTILITAIRES
+// ══════════════════════════════════════════════════════════════════
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function log(msg) { console.log('[Combat] ' + msg); }
+function setStatus(text) {
+    const bar = document.getElementById('status-bar');
+    const txt = document.getElementById('status-text');
+    if (!bar || !txt) return;
+    if (text) { bar.classList.add('visible'); txt.textContent = text; }
+    else bar.classList.remove('visible');
+}
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+}
+function formatEta(seconds) {
+    if (seconds < 60) return Math.round(seconds) + 's';
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    return m + 'm' + (s > 0 ? ' ' + s + 's' : '');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TRAITEMENT DES IMAGES
+// ══════════════════════════════════════════════════════════════════
+function fileToDataUri(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Erreur lecture'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function generateThumbnail(dataUri) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                const ratio = img.height / img.width;
+                canvas.width = THUMBNAIL_MAX_WIDTH;
+                canvas.height = Math.round(THUMBNAIL_MAX_WIDTH * ratio);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            } catch (e) { resolve(dataUri); }
+        };
+        img.onerror = () => resolve(dataUri);
+        img.src = dataUri;
+    });
+}
+
+async function processOneFile(file) {
+    if (!file.type.startsWith('image/')) return null;
+    if (file.size > MAX_IMAGE_SIZE) return null;
+    try {
+        const dataUri = await fileToDataUri(file);
+        const thumbnail = await generateThumbnail(dataUri);
+        return { file: file, dataUri: dataUri, thumbnail: thumbnail, id: Date.now() + Math.random(), role: 'unassigned' };
+    } catch (e) { return null; }
+}
+
+function autoAssignRoles() {
+    // Distribution auto : 1er = fighter_a, 2e = fighter_b, reste = environment / detail alternés
+    let fa = state.images.find(i => i.role === 'fighter_a');
+    let fb = state.images.find(i => i.role === 'fighter_b');
+    state.images.forEach(img => {
+        if (img.role !== 'unassigned') return;
+        if (!fa) { img.role = 'fighter_a'; fa = img; }
+        else if (!fb) { img.role = 'fighter_b'; fb = img; }
+        else img.role = 'environment';
+    });
+    // Si plus de 4 images, les 2 dernières deviennent des détails
+    const envs = state.images.filter(i => i.role === 'environment');
+    if (envs.length > 2) {
+        envs.slice(2).forEach(img => { img.role = 'detail'; });
+    }
+}
+
+async function handleFiles(files) {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!imageFiles.length) return;
+    state.isLoadingImages = true;
+    updateGenerateBtn();
+    setStatus('Chargement de ' + imageFiles.length + ' image' + (imageFiles.length > 1 ? 's' : '') + '…');
+    const uploadZone = document.getElementById('upload-zone');
+    uploadZone.classList.add('loading');
+
+    const BATCH = 5;
+    let processed = 0;
+    for (let i = 0; i < imageFiles.length; i += BATCH) {
+        const batch = imageFiles.slice(i, i + BATCH);
+        const results = await Promise.allSettled(batch.map(f => processOneFile(f)));
+        for (const r of results) {
+            if (r.status === 'fulfilled' && r.value) {
+                state.images.push(r.value);
+                processed++;
+            }
+        }
+        renderImages();
+        setStatus('Chargement… ' + processed + '/' + imageFiles.length);
+    }
+
+    autoAssignRoles();
+    state.isLoadingImages = false;
+    uploadZone.classList.remove('loading');
+    setStatus(null);
+    renderImages();
+    rebuildStoryboard();
+    updateGenerateBtn();
+}
+
+function removeImage(id) {
+    state.images = state.images.filter(img => img.id !== id);
+    renderImages();
+    rebuildStoryboard();
+    updateGenerateBtn();
+}
+
+function setImageRole(id, role) {
+    const img = state.images.find(i => i.id === id);
+    if (!img) return;
+    // Si on assigne fighter_a ou fighter_b, retirer le rôle des autres
+    if (role === 'fighter_a' || role === 'fighter_b') {
+        state.images.forEach(i => {
+            if (i.id !== id && i.role === role) i.role = 'environment';
+        });
+    }
+    img.role = role;
+    renderImages();
+    rebuildStoryboard();
+}
+
+const ROLE_LABELS = {
+    fighter_a: 'Combat. A',
+    fighter_b: 'Combat. B',
+    environment: 'Décor',
+    detail: 'Détail',
+    unassigned: '?'
+};
+
+function renderImages() {
+    const grid = document.getElementById('images-grid');
+    grid.innerHTML = state.images.map(img => {
+        return '<div class="image-card role-' + img.role + '">' +
+            '<div class="role-badge">' + ROLE_LABELS[img.role] + '</div>' +
+            '<img src="' + (img.thumbnail || img.dataUri) + '" alt="" loading="lazy">' +
+            '<button class="remove-btn" data-remove="' + img.id + '">✕</button>' +
+            '<select class="role-select" data-role-for="' + img.id + '">' +
+                '<option value="fighter_a"' + (img.role === 'fighter_a' ? ' selected' : '') + '>A — Combattant</option>' +
+                '<option value="fighter_b"' + (img.role === 'fighter_b' ? ' selected' : '') + '>B — Adversaire</option>' +
+                '<option value="environment"' + (img.role === 'environment' ? ' selected' : '') + '>Décor</option>' +
+                '<option value="detail"' + (img.role === 'detail' ? ' selected' : '') + '>Détail / objet</option>' +
+            '</select>' +
+        '</div>';
+    }).join('');
+
+    grid.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeImage(parseFloat(btn.dataset.remove));
+        });
+    });
+    grid.querySelectorAll('[data-role-for]').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+            setImageRole(parseFloat(sel.dataset.roleFor), e.target.value);
+        });
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STORYBOARD
+// ══════════════════════════════════════════════════════════════════
+function getImageForRole(role) {
+    return state.images.find(i => i.role === role);
+}
+
+function rebuildStoryboard() {
+    const sb = [];
+    const fa = getImageForRole('fighter_a');
+    const fb = getImageForRole('fighter_b');
+    const envs = state.images.filter(i => i.role === 'environment');
+    const details = state.images.filter(i => i.role === 'detail');
+
+    // Sans combattant A, impossible
+    if (!fa) {
+        state.storyboard = [];
+        renderStoryboardPreview();
+        return;
+    }
+
+    let envIdx = 0, detIdx = 0;
+    for (const tpl of SHOT_TEMPLATES) {
+        let image = null;
+        if (tpl.needRole === 'fighter_a') image = fa;
+        else if (tpl.needRole === 'fighter_b') image = fb || fa; // fallback
+        else if (tpl.needRole === 'environment') {
+            image = envs[envIdx] || envs[0] || fa;
+            envIdx++;
+        }
+        else if (tpl.needRole === 'detail') {
+            image = details[detIdx] || details[0] || (tpl.fallbackRole === 'fighter_a' ? fa : null) || fa;
+            detIdx++;
+        }
+        if (!image) continue;
+
+        // Sauter le plan adversaire si pas de combattant B
+        if (tpl.id === 'fighter_b_intro' && !fb) continue;
+        if (tpl.id === 'eyes_b' && !fb) continue;
+        if (tpl.id === 'counter' && !fb) continue;
+
+        sb.push({ tpl, image });
+    }
+
+    state.storyboard = sb;
+    renderStoryboardPreview();
+    updateGenerateBtn();
+}
+
+function renderStoryboardPreview() {
+    const panel = document.getElementById('storyboard-preview');
+    const list = document.getElementById('shot-list');
+    const countEl = document.getElementById('sb-count');
+    if (!panel || !list) return;
+    if (state.storyboard.length === 0) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    countEl.textContent = state.storyboard.length;
+
+    list.innerHTML = state.storyboard.map((s, i) => {
+        const status = state.queue[i]?.status || '';
+        const cls = status === 'done' ? 'done' : status === 'processing' ? 'processing' : status === 'failed' ? 'failed' : '';
+        const icon = status === 'done' ? '✅' : status === 'failed' ? '❌' : status === 'processing' ? '⏳' : s.tpl.icon;
+        return '<div class="shot-item ' + cls + '">' +
+            '<span class="shot-num">' + String(i + 1).padStart(2, '0') + '</span>' +
+            '<span class="shot-icon">' + icon + '</span>' +
+            '<span class="shot-name">' + esc(s.tpl.name) + '</span>' +
+        '</div>';
+    }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDU — SÉLECTEURS DE STYLE
+// ══════════════════════════════════════════════════════════════════
+function renderFightStyles() {
+    const c = document.getElementById('fight-styles');
+    c.innerHTML = FIGHT_STYLES.map(s => {
+        return '<div class="style-card ' + (state.fightStyle === s.id ? 'selected' : '') + '" data-fight="' + s.id + '">' +
+            '<div class="style-emoji">' + s.emoji + '</div>' +
+            '<div>' +
+                '<div class="style-name">' + esc(s.name) + '</div>' +
+                '<div class="style-desc">' + esc(s.desc) + '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+    c.querySelectorAll('[data-fight]').forEach(el => {
+        el.addEventListener('click', () => {
+            state.fightStyle = el.dataset.fight;
+            renderFightStyles();
+        });
+    });
+}
+
+function renderCameraStyles() {
+    const c = document.getElementById('camera-styles');
+    c.innerHTML = CAMERA_STYLES.map(s => {
+        return '<div class="style-card ' + (state.cameraStyle === s.id ? 'selected' : '') + '" data-cam="' + s.id + '">' +
+            '<div class="style-emoji">' + s.emoji + '</div>' +
+            '<div>' +
+                '<div class="style-name">' + esc(s.name) + '</div>' +
+                '<div class="style-desc">' + esc(s.desc) + '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+    c.querySelectorAll('[data-cam]').forEach(el => {
+        el.addEventListener('click', () => {
+            state.cameraStyle = el.dataset.cam;
+            renderCameraStyles();
+        });
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CONSTRUCTION DU PROMPT D'UN PLAN
+// ══════════════════════════════════════════════════════════════════
+function buildShotPrompt(shot) {
+    const style = FIGHT_STYLES.find(s => s.id === state.fightStyle);
+    const cam = CAMERA_STYLES.find(s => s.id === state.cameraStyle);
+    const parts = [];
+
+    // Base : animation de l'image source
+    parts.push(
+        'Animate this exact image as the starting frame. ' +
+        'The subject must remain IDENTICAL to the input image: same face, same expression, same clothing, same pose, same identity. ' +
+        'This is a CONTINUATION of the source image, not a re-imagination.'
+    );
+
+    // Plan spécifique
+    parts.push(shot.tpl.prompt);
+
+    // Style de combat
+    if (style) parts.push(style.prompt);
+
+    // Style de caméra
+    if (cam) parts.push(cam.prompt);
+
+    // Ambiance utilisateur
+    if (state.mainPrompt && state.mainPrompt.trim()) {
+        parts.push('Global artistic direction: ' + state.mainPrompt.trim());
+    }
+
+    // Intensité
+    parts.push(INTENSITY_PRESETS[state.intensity] || INTENSITY_PRESETS.moderate);
+
+    // Contraintes finales
+    parts.push('Sound design: minimal impact foley, whoosh sounds, soft ambient textures, no music, no dialogue');
+    parts.push('Portrait orientation 9:16 vertical, 24fps, no text, no subtitles, no watermarks, consistent character design with source image');
+
+    return parts.join('. ');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// API
+// ══════════════════════════════════════════════════════════════════
+async function apiFetch(url, options = {}, label = 'API') {
+    for (let attempt = 0; attempt < 7; attempt++) {
+        if (state.stopRequested) throw new Error('Arrêt demandé');
+        try {
+            const res = await fetch(url, options);
+            if (res.status === 429) {
+                state.creationAttemptsSinceLastError = 0;
+                if (createIntervalMs < CREATE_INTERVAL_SAFE) {
+                    createIntervalMs = Math.min(createIntervalMs + 8000, CREATE_INTERVAL_MAX);
+                }
+                const wait = [15, 30, 45, 60, 90, 120, 180][Math.min(attempt, 6)];
+                setStatus('L\'IA se prépare… (' + wait + 's)');
+                await sleep(wait * 1000);
+                continue;
+            }
+            if (res.status === 503) {
+                const wait = [5, 10, 15, 20, 30, 45][Math.min(attempt, 5)];
+                setStatus('Le plan se prépare… (' + wait + 's)');
+                await sleep(wait * 1000);
+                continue;
+            }
+            if (res.ok && createIntervalMs > CREATE_INTERVAL_MIN) {
+                state.creationAttemptsSinceLastError++;
+                if (state.creationAttemptsSinceLastError >= 3) {
+                    createIntervalMs = Math.max(createIntervalMs - 4000, CREATE_INTERVAL_MIN);
+                    state.creationAttemptsSinceLastError = 0;
+                }
+            }
+            return res;
+        } catch (e) {
+            if (e.message === 'Arrêt demandé') throw e;
+            const wait = [3, 5, 8, 12, 20, 30][Math.min(attempt, 5)];
+            setStatus('Connexion… (' + wait + 's)');
+            await sleep(wait * 1000);
+        }
+    }
+    return fetch(url, options);
+}
+
+async function createVideoTask(imageDataUri, prompt) {
+    const body = {
+        model: MODEL_VIDEO,
+        prompt: prompt,
+        image: imageDataUri,
+        num_frames: state.durationFrames,
+        frame_rate: FRAME_RATE
+    };
+    const res = await apiFetch(API_BASE + '/videos', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + getApiKey(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    }, 'Création');
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error('HTTP ' + res.status + ' — ' + err.slice(0, 200));
+    }
+    const data = await res.json();
+    const videoId = data.video_id || data.id || data.task_id;
+    if (!videoId) throw new Error('Pas de video_id');
+    return videoId;
+}
+
+async function pollVideo(videoId, onProgress) {
+    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+        if (state.stopRequested) throw new Error('Arrêt demandé');
+        const url = POLL_BASE + '?video_id=' + encodeURIComponent(videoId) + '&model_name=' + encodeURIComponent(MODEL_VIDEO);
+        const res = await apiFetch(url, {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + getApiKey() }
+        }, 'Polling');
+        const d = await res.json();
+        const status = d.status || 'unknown';
+        const progress = d.progress || 0;
+        onProgress(progress + '%');
+        if (status === 'completed' || status === 'succeeded' || status === 'done') {
+            const videoUrl = (d.metadata && d.metadata.url) || d.url || (d.output && d.output.url);
+            if (!videoUrl) throw new Error('Pas d\'URL');
+            return videoUrl;
+        }
+        if (status === 'failed' || status === 'error' || status === 'cancelled') {
+            throw new Error('Échec (' + status + ')');
+        }
+        let r = POLL_INTERVAL_SEC;
+        while (r > 0) {
+            if (state.stopRequested) throw new Error('Arrêt demandé');
+            await sleep(1000);
+            r--;
+        }
+    }
+    throw new Error('Délai dépassé');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FILE D'ATTENTE
+// ══════════════════════════════════════════════════════════════════
+function renderQueue() {
+    const queueEl = document.getElementById('queue');
+    if (!state.queue.length) { queueEl.style.display = 'none'; return; }
+    queueEl.style.display = 'block';
+
+    const total = state.queue.length;
+    const done = state.completed + state.failed;
+
+    let html = '<div class="shot-list">';
+    html += state.queue.slice(0, MAX_VISIBLE_QUEUE).map((item, idx) => {
+        let icon = item.tpl.icon, cls = '';
+        let statusText = 'En attente';
+        if (item.status === 'creating') { icon = '⏳'; statusText = 'Préparation…'; cls = 'processing'; }
+        else if (item.status === 'processing') { icon = '⏳'; statusText = item.progress || 'En cours…'; cls = 'processing'; }
+        else if (item.status === 'done') { icon = '✅'; statusText = 'Terminé'; cls = 'done'; }
+        else if (item.status === 'failed') { icon = '❌'; statusText = 'Échec'; cls = 'failed'; }
+
+        return '<div class="shot-item ' + cls + '">' +
+            '<span class="shot-num">' + String(idx + 1).padStart(2, '0') + '</span>' +
+            '<span class="shot-icon">' + icon + '</span>' +
+            '<span class="shot-name">' + esc(item.tpl.name) + '</span>' +
+            '<span style="font-size:0.7rem;color:var(--ink-dim);">' + esc(statusText) + '</span>' +
+        '</div>';
+    }).join('');
+    html += '</div>';
+    html += '<div style="text-align:center;padding:0.6rem;color:var(--ink-dim);font-size:0.75rem;">Progression : ' + done + '/' + total + '</div>';
+    queueEl.innerHTML = html;
+
+    renderStoryboardPreview();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// GALERIE
+// ══════════════════════════════════════════════════════════════════
+function addToGallery(videoUrl, shotIndex, shotName) {
+    const galleryEl = document.getElementById('gallery');
+    const grid = document.getElementById('gallery-grid');
+    galleryEl.style.display = 'block';
+    const el = document.createElement('div');
+    el.className = 'gallery-item';
+    el.dataset.shotIndex = shotIndex;
+    el.innerHTML = '<video controls preload="metadata" muted playsinline>' +
+        '<source src="' + videoUrl + '" type="video/mp4">' +
+        '</video>' +
+        '<div class="g-caption">' +
+            '<span>' + esc(shotName) + '</span>' +
+            '<span class="g-num">PLAN ' + String(shotIndex + 1).padStart(2, '0') + '</span>' +
+        '</div>';
+    grid.appendChild(el);
+    // Trier par numéro de plan
+    const items = Array.from(grid.children);
+    items.sort((a, b) => parseInt(a.dataset.shotIndex) - parseInt(b.dataset.shotIndex));
+    items.forEach(i => grid.appendChild(i));
+    updatePlaySeqBtn();
+}
+
+function updatePlaySeqBtn() {
+    const btn = document.getElementById('play-seq-btn');
+    const count = document.querySelectorAll('.gallery-item video').length;
+    if (count >= 2) btn.classList.add('visible');
+    else btn.classList.remove('visible');
+}
+
+function playSequence() {
+    const videos = Array.from(document.querySelectorAll('.gallery-item video'));
+    videos.sort((a, b) => {
+        const ai = parseInt(a.closest('.gallery-item').dataset.shotIndex);
+        const bi = parseInt(b.closest('.gallery-item').dataset.shotIndex);
+        return ai - bi;
+    });
+    let idx = 0;
+    function playNext() {
+        if (idx >= videos.length) return;
+        const v = videos[idx];
+        v.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        v.currentTime = 0;
+        const p = v.play();
+        if (p && p.catch) p.catch(() => {});
+        v.onended = () => { idx++; playNext(); };
+    }
+    playNext();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PIPELINE
+// ══════════════════════════════════════════════════════════════════
+async function createTaskOnly(item) {
+    item.status = 'creating';
+    item.progress = 'Préparation…';
+    renderQueue();
+
+    const prompt = buildShotPrompt(item);
+    item.prompt = prompt;
+
+    log('[Plan ' + (item.shotIndex + 1) + ' — ' + item.tpl.name + '] Création');
+    const videoId = await createVideoTask(item.image.dataUri, prompt);
+    item.videoId = videoId;
+    item.status = 'processing';
+    item.progress = 'En cours…';
+    renderQueue();
+    return videoId;
+}
+
+async function pollTaskAndDisplay(item) {
+    try {
+        const videoUrl = await pollVideo(item.videoId, (prog) => {
+            item.progress = prog;
+            renderQueue();
+        });
+        item.status = 'done';
+        item.videoUrl = videoUrl;
+        state.completed++;
+        renderQueue();
+        updateGenerateBtn();
+        addToGallery(videoUrl, item.shotIndex, item.tpl.name);
+        log('[Plan ' + (item.shotIndex + 1) + '] Terminé');
+    } catch (e) {
+        if (e.message === 'Arrêt demandé') {
+            item.status = 'failed';
+            item.progress = 'Arrêté';
+        } else {
+            log('[Plan ' + (item.shotIndex + 1) + '] Échec : ' + e.message);
+            item.status = 'failed';
+            item.progress = 'Échec';
+            state.failed++;
+        }
+        renderQueue();
+        updateGenerateBtn();
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// WORKFLOW PRINCIPAL
+// ══════════════════════════════════════════════════════════════════
+async function startGeneration() {
+    if (state.isRunning) return;
+    if (!state.storyboard.length) {
+        showToast('Ajoutez au moins une image combattant A', 'error');
+        return;
+    }
+    if (!getApiKey()) {
+        showToast('Ajoutez d\'abord votre clé API', 'error');
+        return;
+    }
+
+    state.mainPrompt = document.getElementById('main-prompt').value.trim();
+
+    state.isRunning = true;
+    state.stopRequested = false;
+    state.completed = 0;
+    state.failed = 0;
+    state.creationAttemptsSinceLastError = 0;
+    createIntervalMs = CREATE_INTERVAL_MIN;
+
+    state.queue = state.storyboard.map((s, i) => ({
+        shotIndex: i,
+        tpl: s.tpl,
+        image: s.image,
+        status: 'pending',
+        progress: null,
+        videoId: null,
+        videoUrl: null,
+        prompt: null
+    }));
+
+    document.getElementById('gallery-grid').innerHTML = '';
+    document.getElementById('gallery').style.display = 'none';
+    document.getElementById('play-seq-btn').classList.remove('visible');
+    document.getElementById('stop-btn').classList.add('visible');
+    document.getElementById('generate-btn').disabled = true;
+
+    await ensureWakeLockActive();
+
+    renderQueue();
+    renderStoryboardPreview();
+    updateGenerateBtn();
+
+    log('Démarrage — ' + state.queue.length + ' plans');
+    const totalStart = Date.now();
+    const pollingTasks = [];
+
+    try {
+        for (let i = 0; i < state.queue.length; i++) {
+            if (state.stopRequested) break;
+            const item = state.queue[i];
+            try {
+                await createTaskOnly(item);
+                pollingTasks.push(pollTaskAndDisplay(item));
+            } catch (e) {
+                if (e.message === 'Arrêt demandé') break;
+                log('[Plan ' + (i + 1) + '] Échec création : ' + e.message);
+                item.status = 'failed';
+                item.progress = 'Échec';
+                state.failed++;
+                renderQueue();
+                updateGenerateBtn();
+            }
+
+            if (i < state.queue.length - 1 && !state.stopRequested) {
+                const waitSec = Math.ceil(createIntervalMs / 1000);
+                for (let r = waitSec; r > 0; r--) {
+                    if (state.stopRequested) break;
+                    setStatus('Préparation du plan ' + (i + 2) + '/' + state.queue.length + ' — dans ' + r + 's');
+                    await sleep(1000);
+                }
+            }
+        }
+        if (pollingTasks.length > 0) {
+            setStatus('Finalisation du montage…');
+            await Promise.allSettled(pollingTasks);
+        }
+    } catch (e) {
+        log('Erreur globale : ' + e.message);
+    }
+
+    const totalElapsed = (Date.now() - totalStart) / 1000;
+    const summary = state.stopRequested
+        ? 'Arrêté — ' + state.completed + '/' + state.queue.length + ' plans'
+        : '🎬 ' + state.completed + '/' + state.queue.length + ' plans tournés en ' + formatEta(totalElapsed);
+    log(summary);
+    setStatus(summary);
+    await sleep(4000);
+    setStatus(null);
+
+    state.isRunning = false;
+    state.stopRequested = false;
+    document.getElementById('stop-btn').classList.remove('visible');
+    updateGenerateBtn();
+
+    if (state.completed >= 2) {
+        showToast(state.completed + ' plans créés — lancez la séquence !', 'success');
+    } else {
+        showToast(state.completed + ' plan(s) créé(s)', 'success');
+    }
+}
+
+function stopGeneration() {
+    if (!state.isRunning) return;
+    state.stopRequested = true;
+    setStatus('Arrêt en cours…');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+(function init() {
+    document.getElementById('api-save-btn')?.addEventListener('click', saveApiKey);
+    document.getElementById('stop-btn')?.addEventListener('click', stopGeneration);
+    document.getElementById('play-seq-btn')?.addEventListener('click', playSequence);
+    document.getElementById('generate-btn')?.addEventListener('click', startGeneration);
+
+    const apiInput = document.getElementById('api-key-input');
+    if (apiInput) {
+        apiInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); saveApiKey(); }
+        });
+    }
+
+    document.querySelectorAll('[data-toggle]').forEach(h => {
+        h.addEventListener('click', () => {
+            document.getElementById(h.dataset.toggle).classList.toggle('open');
+        });
+    });
+
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+    if (uploadZone && fileInput) {
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => {
+            handleFiles(e.target.files);
+            fileInput.value = '';
+        });
+    }
+
+    const mainPrompt = document.getElementById('main-prompt');
+    if (mainPrompt) mainPrompt.addEventListener('input', e => { state.mainPrompt = e.target.value; });
+
+    const durationSelect = document.getElementById('duration-select');
+    if (durationSelect) durationSelect.addEventListener('change', e => {
+        state.durationFrames = parseInt(e.target.value, 10);
+    });
+
+    const intensitySelect = document.getElementById('intensity-select');
+    if (intensitySelect) intensitySelect.addEventListener('change', e => {
+        state.intensity = e.target.value;
+    });
+
+    const wakeBtn = document.getElementById('wake-toggle-btn');
+    if (wakeBtn) wakeBtn.addEventListener('click', toggleWakeLock);
+
+    try {
+        wakeLockEnabled = localStorage.getItem(WAKE_LOCK_PREF) === '1';
+    } catch (e) {}
+
+    if (wakeLockEnabled) {
+        activateWakeLock().then(() => updateWakeStatus());
+    }
+
+    updateApiPanel();
+    updateWakeStatus();
+    renderFightStyles();
+    renderCameraStyles();
+    renderImages();
+    renderQueue();
+    rebuildStoryboard();
+
+    log('Studio Combat prêt.');
+})();
+</script>
+
+</body>
+</html>
